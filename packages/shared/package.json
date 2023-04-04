@@ -1,0 +1,14 @@
+{
+  "name": "@asksec-ai/shared",
+  "packageManager": "yarn@3.5.0",
+  "scripts": {
+    "generate": "yarn prisma generate"
+  },
+  "dependencies": {
+    "@prisma/client": "^4.12.0",
+    "@types/node": "^18.15.11"
+  },
+  "devDependencies": {
+    "prisma": "^4.12.0"
+  }
+}

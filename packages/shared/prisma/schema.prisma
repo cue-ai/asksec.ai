@@ -1,0 +1,35 @@
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["orderByNulls"]
+}
+
+model SecCompany {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  ticker String @unique
+
+  sections SecCompanySectionItem[]
+}
+
+enum TenKSection {
+  One
+  OneA
+  SevenA
+}
+
+model SecCompanySectionItem {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  companyId String
+  company   SecCompany @relation(fields: [companyId], references: [id])
+
+  section   TenKSection
+  text      String
+  embedding Float[]
+
+  order Int
+}
