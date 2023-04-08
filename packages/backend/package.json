@@ -3,8 +3,7 @@
   "packageManager": "yarn@3.5.0",
   "scripts": {
     "dev": "nodemon index.ts",
-    "start": "ts-node index.ts",
-    "lint": "eslint ."
+    "start": "ts-node index.ts"
   },
   "devDependencies": {
     "@types/dotenv": "^8.2.0",

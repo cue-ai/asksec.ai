@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "generate": "yarn workspace @asksec-ai/shared generate",
-    "postinstall": "yarn generate && husky install"
+    "postinstall": "yarn generate && husky install",
+    "lint": "eslint ."
   },
   "workspaces": [
     "packages/*"
