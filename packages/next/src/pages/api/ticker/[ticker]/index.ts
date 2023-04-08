@@ -31,9 +31,8 @@ const TickerHandler: NextApiHandler<SecCompanyRes> = async (req, res) => {
     });
 
     return res.status(200).json({ secCompany: c });
-  } else {
-    return res.status(200).json({ secCompany });
   }
+  return res.status(200).json({ secCompany });
 };
 
 export default TickerHandler;

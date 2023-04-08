@@ -61,7 +61,7 @@ export const Chatbox: FC<ChatboxProps> = ({ ticker }) => {
   const onSubmit = async ({ question }: FormData) => {
     setMSendLoading(true);
     try {
-      const data = await fetch(`/api/ticker/${ticker}/question`, {
+      const d = await fetch(`/api/ticker/${ticker}/question`, {
         body: JSON.stringify({
           question,
         }),
@@ -72,7 +72,7 @@ export const Chatbox: FC<ChatboxProps> = ({ ticker }) => {
       });
 
       const { answer, section }: { answer: string; section: TenKSection } =
-        (await data.json()) as any;
+        (await d.json()) as any;
 
       setActions((prev) => [
         ...prev,

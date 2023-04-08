@@ -1,4 +1,3 @@
-import { Inter } from "next/font/google";
 import { SeoContainer } from "@/Components/SeoContainer";
 import { Box, Container, Divider, Flex, Heading, Text } from "@chakra-ui/react";
 import Illustration from "@/Components/Illustration";

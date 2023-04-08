@@ -13,7 +13,7 @@ const QuestionHandler: NextApiHandler = async (req, res) => {
   const ticker = rTicker.toUpperCase();
   const company = await prisma.secCompany.findFirst({
     where: {
-      ticker: ticker,
+      ticker,
     },
   });
 
