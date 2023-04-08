@@ -17,7 +17,7 @@ import {
 } from "@chakra-ui/react";
 import { TenKSection } from "@prisma/client";
 import { sectionToEnglish } from "@asksec-ai/shared/enumToEnglish";
-import { analytics } from "@/Lib/analytics";
+import { analyticsBrowser } from "@/Lib/analyticsBrowser";
 
 type ChatBubbleProps = {
   message: string;
@@ -38,7 +38,7 @@ export const ChatRow: FC<ChatBubbleProps> = ({
 }) => {
   const { isOpen, onOpen, onClose } = useDisclosure({
     onOpen() {
-      analytics.track("View Source", {
+      analyticsBrowser.track("View Source", {
         ticker,
       });
     },

@@ -44,6 +44,7 @@ __metadata:
     "@emotion/styled": ^11.10.6
     "@hookform/resolvers": ^3.0.1
     "@segment/analytics-next": ^1.51.3
+    "@segment/analytics-node": ^1.0.0-beta.25
     "@svgr/webpack": ^7.0.0
     "@types/node": 18.15.11
     "@types/react": 18.0.33

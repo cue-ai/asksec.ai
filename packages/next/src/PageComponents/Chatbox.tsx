@@ -23,7 +23,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { TenKSection } from "@prisma/client";
 import { useSwr } from "@/Hooks/useSwr";
 import { SecCompanyRes } from "@asksec-ai/shared/types/apiRes";
-import { analytics } from "@/Lib/analytics";
+import { analyticsBrowser } from "@/Lib/analyticsBrowser";
 
 type FormData = {
   question: string;
@@ -80,7 +80,7 @@ export const Chatbox: FC<ChatboxProps> = ({ ticker }) => {
       }: { answer: string; section: TenKSection; text: string } =
         (await d.json()) as any;
 
-      analytics.track("Question Asked", {
+      analyticsBrowser.track("Question Asked", {
         ticker,
         question,
         answer,
