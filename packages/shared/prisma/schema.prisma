@@ -8,9 +8,16 @@ generator client {
   previewFeatures = ["orderByNulls"]
 }
 
+enum Status {
+  Loading
+  Error
+  Success
+}
+
 model SecCompany {
-  id     String @id @default(auto()) @map("_id") @db.ObjectId
-  ticker String @unique
+  id     String  @id @default(auto()) @map("_id") @db.ObjectId
+  ticker String  @unique
+  status Status?
 
   sections SecCompanySectionItem[]
 }
@@ -24,12 +31,12 @@ enum TenKSection {
 model SecCompanySectionItem {
   id String @id @default(auto()) @map("_id") @db.ObjectId
 
-  companyId String
+  companyId String     @db.ObjectId
   company   SecCompany @relation(fields: [companyId], references: [id])
 
   section   TenKSection
   text      String
-  embedding Float[]
+  embedding Float[]     @default([])
 
   order Int
 }

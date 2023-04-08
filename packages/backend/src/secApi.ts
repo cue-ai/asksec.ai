@@ -1,6 +1,8 @@
 import axios from "axios";
 import { EdgarFiling } from "@asksec-ai/shared/types/edgar";
 import { logger } from "./logger";
+import { prisma } from "@asksec-ai/shared/prisma";
+import { englishToSection } from "@asksec-ai/shared/enumToEnglish";
 
 const secApiToken = process.env.SEC_API_TOKEN;
 
@@ -38,25 +40,52 @@ export const getEdgarFiling = async (ticker: string): Promise<EdgarFiling> => {
 
 export const get10kSection = async (
   filingLink: string,
-  item: "1" | "1A" | "7A"
+  item: "1" | "1A" | "7A",
+  companyId: string
 ) => {
-  logger.info(`Getting 10k section`, { filingLink, item });
-  const { data } = await axios.request({
-    method: 'GET',
-    url: 'https://api.sec-api.io/extractor',
-    params: {
-      url: filingLink,
-      item: item,
-      type: 'text',
-      token: secApiToken
-    },
-    headers: {
-      Authorization: 'e5bd42a7e847ee4c4f5b1b99281e58d93e487b0615f209c0727e2f115614ef71',
-      'Content-Type': 'application/json'
+  try {
+    const existing = await prisma.secCompanySectionItem.findMany({
+      where: {
+        companyId,
+        section: englishToSection[item],
+      },
+    });
+    if (existing && existing.length > 10) {
+      logger.info(`Found existing 10k ${item}`, { companyId, item });
+
+      return existing.map((e) => e.text).join("");
     }
-  });
 
-  logger.info(`Got 10k section`, { filingLink, item, dataLength: data.length });
+    logger.info(`Getting 10k ${item}`, { companyId, item });
+    const { data } = await axios.request({
+      method: "GET",
+      url: "https://api.sec-api.io/extractor",
+      params: {
+        url: filingLink,
+        item: item,
+        type: "text",
+        token: secApiToken,
+      },
+      headers: {
+        Authorization:
+          "e5bd42a7e847ee4c4f5b1b99281e58d93e487b0615f209c0727e2f115614ef71",
+        "Content-Type": "application/json",
+      },
+    });
 
-  return data;
+    logger.info(`Got 10k ${item}`, {
+      companyId,
+      item,
+      dataLength: data.length,
+    });
+
+    return data;
+  } catch (e) {
+    logger.error(`Error getting 10k ${item}`, {
+      companyId,
+      item,
+      error: e,
+    });
+    return "";
+  }
 };

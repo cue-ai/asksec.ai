@@ -11,8 +11,7 @@ export const theme: Record<string, any> = extendTheme({
   components: { ...components },
   colors: {
     ...baseTheme.colors,
-    brand: baseTheme.colors.purple,
-    outwork: "#2061E4",
+    brand: baseTheme.colors.blue,
   },
   space: {
     "4.5": "1.125rem",

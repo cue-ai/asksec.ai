@@ -4,9 +4,8 @@ import express, { Request, Response, Express, NextFunction } from "express";
 config();
 
 import { logger } from "./src/logger";
-import {processTicker} from "./src/processTicker";
-import {prisma} from "@asksec-ai/shared/prisma";
-
+import { processTicker } from "./src/processTicker";
+import { prisma } from "@asksec-ai/shared/prisma";
 
 const port = process.env.PORT ?? 3001;
 
@@ -35,21 +34,26 @@ expressApp.get("/", (req, res) => {
   res.status(200).send("Server alive");
 });
 
-expressApp.post('/process-ticker', async (req, res) => {
+expressApp.post("/process-ticker", async (req, res) => {
   const { ticker } = req.body;
-  if (!ticker) return res.status(400).json({ error: "No ticker provided" });
+  console.log(req.body);
+  if (!ticker) {
+    logger.error("No ticker provided", { body: req.body });
+    return res.status(400).json({ error: "No ticker provided" });
+  }
 
   const prevCompany = await prisma.secCompany.findFirst({
     where: {
       ticker,
-    }
+    },
   });
-  if (prevCompany) return res.status(200).json({ company: prevCompany });
+  if (prevCompany?.status === "Success" || prevCompany?.status === "Loading")
+    return res.status(200).json({ company: prevCompany });
 
-  const company = await processTicker(ticker)
+  const company = await processTicker(ticker);
 
   res.status(200).json({ company });
-})
+});
 
 expressApp.listen(port, () => {
   // eslint-disable-next-line no-console

@@ -1,7 +1,7 @@
 import { get10kSection, getEdgarFiling } from "./secApi";
-import { prisma } from "@asksec-ai/shared/prisma";
+import { prisma, TenKSection } from "@asksec-ai/shared/prisma";
 import { openai } from "./openAi";
-import {logger} from "./logger";
+import { logger } from "./logger";
 
 const chunkText = (text: string, chunkSize: number = 2000) => {
   const words = text.split(" ");
@@ -16,14 +16,18 @@ const chunkText = (text: string, chunkSize: number = 2000) => {
   return contentSections;
 };
 
-const chunkParagraphs = (text: string, chunkSize: number = 2000): string[] => {
+const chunkParagraphs = (text: string, chunkSize: number = 3000): string[] => {
   const paragraphs = text.split("\n");
-  const words = paragraphs.reduce((acc, paragraph) => {
-    if (paragraph === '' || paragraph.length < 100) return acc;
-    if (paragraph.length > 2000) {
+  const words = paragraphs.reduce((acc, paragraph, currentIndex) => {
+    if (paragraph === "" || paragraph.length < 100) return acc;
+    if (acc.length === 0) {
+      acc.push(paragraph);
+    } else if (acc[acc.length - 1].length + paragraph.length > chunkSize) {
+      acc.push(paragraph);
+    } else if (paragraph.length > 2000) {
       acc.push(...chunkText(paragraph, chunkSize));
     } else {
-      acc.push(paragraph);
+      acc[acc.length - 1] += ` ${paragraph}`;
     }
     return acc;
   }, [] as string[]);
@@ -33,70 +37,134 @@ const chunkParagraphs = (text: string, chunkSize: number = 2000): string[] => {
 
 const generateEmbeddings = async (
   companyId: string,
-  section: string,
+  section: TenKSection,
   text: string,
   index: number
 ) => {
-  const res = await openai.createEmbedding({
-    model: "text-embedding-ada-002",
-    input: text,
-  });
-  await prisma.secCompanySectionItem.create({
-    data: {
+  try {
+    const existing = await prisma.secCompanySectionItem.findFirst({
+      where: {
+        companyId,
+        section,
+        order: index,
+      },
+    });
+    if (existing?.embedding) return;
+    const res = await openai.createEmbedding({
+      model: "text-embedding-ada-002",
+      input: text,
+    });
+    await prisma.secCompanySectionItem.create({
+      data: {
+        companyId,
+        text,
+        order: index,
+        embedding: res.data.data?.[0]?.embedding,
+        section: "One",
+      },
+    });
+  } catch (e) {
+    logger.error(`Error generating embedding`, {
       companyId,
+      section,
+      index,
+      error: e,
       text,
-      order: index,
-      embedding: res.data.data?.[0]?.embedding,
-      section: "One",
-    },
-  });
+    });
+  }
 };
 
 export const processTicker = async (ticker: string) => {
+  logger.info(`Processing ticker`, { ticker });
   const filing = await getEdgarFiling(ticker);
 
-  const company = await prisma.secCompany.create({
-    data: {
+  const company = await prisma.secCompany.upsert({
+    where: {
       ticker,
+    },
+    update: {
+      status: "Loading",
+    },
+    create: {
+      ticker,
+      status: "Loading",
     },
   });
 
-  logger.info(`Created company`, { ticker, companyId: company.id });
+  try {
+    logger.info(`Upserted company`, { ticker, companyId: company.id });
 
-  const [oneSection, oneASection, sevenASection] = await Promise.all([
-    get10kSection(filing.linkToFilingDetails, "1"),
-    get10kSection(filing.linkToFilingDetails, "1A"),
-    get10kSection(filing.linkToFilingDetails, "7A"),
-  ]);
+    const [oneSection, oneASection, sevenASection] = await Promise.all([
+      get10kSection(filing.linkToFilingDetails, "1", company.id),
+      get10kSection(filing.linkToFilingDetails, "1A", company.id),
+      get10kSection(filing.linkToFilingDetails, "7A", company.id),
+    ]);
 
-  logger.info(`Got 10k sections`, { ticker, companyId: company.id });
+    logger.info(`Got 10k sections`, {
+      ticker,
+      companyId: company.id,
+      oneSection: oneSection.length,
+      oneASection: oneASection.length,
+      sevenASection: sevenASection.length,
+    });
 
-  const oneSectionChunks = chunkParagraphs(oneSection);
-  const oneASectionChunks = chunkParagraphs(oneASection);
-  const sevenASectionChunks = chunkParagraphs(sevenASection);
+    const oneSectionChunks = chunkParagraphs(oneSection);
+    const oneASectionChunks = chunkParagraphs(oneASection);
+    const sevenASectionChunks = chunkParagraphs(sevenASection);
 
+    logger.info(`Generating embeddings`, {
+      ticker,
+      companyId: company.id,
+      oneSectionChunks: oneSectionChunks.length,
+      oneASectionChunks: oneASectionChunks.length,
+      sevenASectionChunks: sevenASectionChunks.length,
+    });
 
-  logger.info(`Generating embeddings`, { ticker, companyId: company.id });
+    await Promise.all([
+      Promise.all(
+        oneSectionChunks.map(async (text, i) =>
+          generateEmbeddings(company.id, "One", text, i)
+        )
+      ),
+      Promise.all(
+        oneASectionChunks.map(async (text, i) =>
+          generateEmbeddings(company.id, "OneA", text, i)
+        )
+      ),
+      Promise.all(
+        sevenASectionChunks.map(async (text, i) =>
+          generateEmbeddings(company.id, "SevenA", text, i)
+        )
+      ),
+    ]);
 
-  await Promise.all([
-    Promise.all(
-      oneSectionChunks.map(async (text, i) =>
-        generateEmbeddings(company.id, "One", text, i)
-      )
-    ),
-    Promise.all(
-      oneASectionChunks.map(async (text, i) =>
-        generateEmbeddings(company.id, "OneA", text, i)
-      )
-    ),
-    Promise.all(
-      sevenASectionChunks.map(async (text, i) =>
-        generateEmbeddings(company.id, "SevenA", text, i)
-      )
-    )
-  ])
+    logger.info(`Ticker processed`, { ticker, companyId: company.id });
 
-  logger.info(`Ticker processed`, { ticker, companyId: company.id });
+    const c = await prisma.secCompany.update({
+      where: {
+        ticker,
+      },
+      data: {
+        status: "Success",
+      },
+    });
 
-  return company;
+    return c;
+  } catch (e) {
+    logger.error(`Error processing ticker`, {
+      ticker,
+      companyId: company.id,
+      error: e,
+    });
+
+    const c = await prisma.secCompany.update({
+      where: {
+        ticker,
+      },
+      data: {
+        status: "Error",
+      },
+    });
+    return c;
+  }
 };

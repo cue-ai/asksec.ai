@@ -1,8 +1,8 @@
 import { NextApiHandler } from "next";
 import { prisma } from "@asksec-ai/shared/prisma";
 import { cosineSim } from "@asksec-ai/shared/utils/cosineSim";
-import {z} from "zod";
-import {generateEmbedding, queryOpenAI} from "@/Lib/openAi";
+import { z } from "zod";
+import { generateEmbedding, queryOpenAI } from "@/Lib/openAi";
 
 const questionHandlerApiBody = z.object({
   question: z.string(),
@@ -14,10 +14,11 @@ const QuestionHandler: NextApiHandler = async (req, res) => {
   const company = await prisma.secCompany.findFirst({
     where: {
       ticker: ticker,
-    }
-  })
+    },
+  });
 
-  if (!company) return res.status(400).json({ error: "Ticker invalid or not scraped" });
+  if (!company)
+    return res.status(400).json({ error: "Ticker invalid or not scraped" });
 
   const { question } = questionHandlerApiBody.parse(req.body);
   const questionEmbedding = await generateEmbedding(question);
@@ -29,17 +30,18 @@ const QuestionHandler: NextApiHandler = async (req, res) => {
   });
 
   const relevantContent = embeddings
-    .map(({ embedding, text }) => ({
+    .map(({ embedding, text, section }) => ({
+      section,
       text,
       sim: cosineSim(embedding, questionEmbedding),
     }))
-    .sort((a, b) => b.sim - a.sim)[0].text;
+    .sort((a, b) => b.sim - a.sim)[0];
 
   const answer = await queryOpenAI(
-    `${relevantContent} \n ---------- \nBased on above text from a companies SEC documents, answer the question: ${question}`
+    `${relevantContent.text} \n ---------- \nBased on above text from a companies SEC documents, answer the question: ${question}`
   );
 
-  return res.status(200).json({ answer });
+  return res.status(200).json({ answer, section: relevantContent.section });
 };
 
 export default QuestionHandler;

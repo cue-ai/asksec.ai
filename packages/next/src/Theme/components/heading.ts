@@ -4,6 +4,12 @@ const baseStyle = {
 };
 
 const sizes = {
+  "3xl": {
+    fontSize: "8xl",
+    lineHeight: "7.2rem",
+    letterSpacing: "tight",
+    fontWeight: "bold",
+  },
   "2xl": {
     fontSize: "7xl",
     lineHeight: "5.625rem",
