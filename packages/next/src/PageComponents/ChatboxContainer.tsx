@@ -3,12 +3,16 @@ import { Button, Flex } from "@chakra-ui/react";
 import { EmptyChatbox } from "@/PageComponents/EmptyChatbox";
 import { StringParam, useQueryParam } from "use-query-params";
 import { Chatbox } from "@/PageComponents/Chatbox";
+import { analytics } from "@/Lib/analytics";
 
 export const ChatboxContainer: FC = () => {
   const [ticker, setTicker] = useQueryParam("ticker", StringParam);
 
   const onSubmit = ({ ticker: nTicker }: any) => {
     setTicker(nTicker);
+    analytics.track("Set Ticker", {
+      ticker,
+    });
   };
 
   return (

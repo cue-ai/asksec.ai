@@ -1,8 +1,8 @@
 import axios from "axios";
 import { EdgarFiling } from "@asksec-ai/shared/types/edgar";
-import { logger } from "./logger";
 import { prisma } from "@asksec-ai/shared/prisma";
 import { englishToSection } from "@asksec-ai/shared/enumToEnglish";
+import { logger } from "./logger";
 
 const secApiToken = process.env.SEC_API_TOKEN;
 
@@ -40,7 +40,7 @@ export const getEdgarFiling = async (ticker: string): Promise<EdgarFiling> => {
 
 export const get10kSection = async (
   filingLink: string,
-  item: "1" | "1A" | "7A",
+  item: "1" | "1A" | "7" | "7A",
   companyId: string
 ) => {
   try {
@@ -62,7 +62,7 @@ export const get10kSection = async (
       url: "https://api.sec-api.io/extractor",
       params: {
         url: filingLink,
-        item: item,
+        item,
         type: "text",
         token: secApiToken,
       },

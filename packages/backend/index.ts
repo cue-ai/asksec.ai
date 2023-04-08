@@ -1,11 +1,12 @@
 import { config } from "dotenv";
 import express, { Request, Response, Express, NextFunction } from "express";
 
-config();
-
+import { prisma } from "@asksec-ai/shared/prisma";
 import { logger } from "./src/logger";
 import { processTicker } from "./src/processTicker";
-import { prisma } from "@asksec-ai/shared/prisma";
+import { analytics } from "./src/analytics";
+
+config();
 
 const port = process.env.PORT ?? 3001;
 
@@ -36,11 +37,19 @@ expressApp.get("/", (req, res) => {
 
 expressApp.post("/process-ticker", async (req, res) => {
   const { ticker } = req.body;
-  console.log(req.body);
+
   if (!ticker) {
     logger.error("No ticker provided", { body: req.body });
     return res.status(400).json({ error: "No ticker provided" });
   }
+
+  analytics.track({
+    event: "process-ticker",
+    properties: {
+      ticker,
+    },
+    anonymousId: "anonymous",
+  });
 
   const prevCompany = await prisma.secCompany.findFirst({
     where: {

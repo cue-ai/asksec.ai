@@ -25,6 +25,7 @@ model SecCompany {
 enum TenKSection {
   One
   OneA
+  Seven
   SevenA
 }
 

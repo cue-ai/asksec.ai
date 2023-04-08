@@ -20,10 +20,10 @@ import { ChatRow } from "@/PageComponents/ChatRow";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { sectionToEnglish } from "@asksec-ai/shared/enumToEnglish";
 import { TenKSection } from "@prisma/client";
 import { useSwr } from "@/Hooks/useSwr";
 import { SecCompanyRes } from "@asksec-ai/shared/types/apiRes";
+import { analytics } from "@/Lib/analytics";
 
 type FormData = {
   question: string;
@@ -40,6 +40,8 @@ type ChatboxProps = {
 type Action = {
   question: string;
   answer: string;
+  section: TenKSection;
+  text: string;
 };
 
 export const Chatbox: FC<ChatboxProps> = ({ ticker }) => {
@@ -71,14 +73,26 @@ export const Chatbox: FC<ChatboxProps> = ({ ticker }) => {
         method: "POST",
       });
 
-      const { answer, section }: { answer: string; section: TenKSection } =
+      const {
+        answer,
+        section,
+        text,
+      }: { answer: string; section: TenKSection; text: string } =
         (await d.json()) as any;
+
+      analytics.track("Question Asked", {
+        ticker,
+        question,
+        answer,
+      });
 
       setActions((prev) => [
         ...prev,
         {
           question,
-          answer: `${answer} (From section ${sectionToEnglish[section]})`,
+          answer,
+          section,
+          text,
         },
       ]);
       reset();
@@ -119,12 +133,20 @@ export const Chatbox: FC<ChatboxProps> = ({ ticker }) => {
       </Flex>
       {isCompanyReady && !isLoading ? (
         <VStack pt={2} p={4} overflowY="auto" w="full">
-          <ChatRow message={`Ask me any question about ${ticker} 👀`} />
+          <ChatRow
+            message={`Ask me any question about ${ticker} 👀`}
+            ticker={ticker}
+          />
 
-          {actions.map(({ question, answer }) => (
+          {actions.map(({ question, answer, section, text }) => (
             <>
-              <ChatRow message={question} isUser />
-              <ChatRow message={answer} />
+              <ChatRow message={question} isUser ticker={ticker} />
+              <ChatRow
+                message={answer}
+                section={section}
+                text={text}
+                ticker={ticker}
+              />
             </>
           ))}
         </VStack>
@@ -141,8 +163,14 @@ export const Chatbox: FC<ChatboxProps> = ({ ticker }) => {
       )}
       <Spacer />
       {actions.length === 0 && (
-        <HStack px={4} pt={4} background="blackAlpha.300" spacing={2} w="full">
-          <Text>Examples:</Text>
+        <HStack
+          px={4}
+          pt={4}
+          background="blackAlpha.300"
+          spacing={2}
+          w="full"
+          overflowX="scroll"
+        >
           <Tag
             cursor="pointer"
             onClick={() => {
@@ -155,11 +183,23 @@ export const Chatbox: FC<ChatboxProps> = ({ ticker }) => {
           <Tag
             cursor="pointer"
             onClick={() => {
-              setValue("question", `What are some key risks for ${ticker}?`);
+              setValue("question", `What are some risks for ${ticker}?`);
               handleSubmit(onSubmit)();
             }}
           >
-            What are some key risks for {ticker}?
+            What are some risks for {ticker}?
+          </Tag>
+          <Tag
+            cursor="pointer"
+            onClick={() => {
+              setValue(
+                "question",
+                `What does ${ticker} say about revenue intelligence?`
+              );
+              handleSubmit(onSubmit)();
+            }}
+          >
+            What does {ticker} say about AI?
           </Tag>
         </HStack>
       )}

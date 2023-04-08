@@ -15,6 +15,7 @@
   "dependencies": {
     "@asksec-ai/shared": "workspace:^",
     "@axiomhq/axiom-node": "^0.11.0",
+    "@segment/analytics-node": "^1.0.0-beta.25",
     "axios": "^1.3.4",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",

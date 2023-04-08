@@ -3,6 +3,7 @@ import { prisma } from "@asksec-ai/shared/prisma";
 import { cosineSim } from "@asksec-ai/shared/utils/cosineSim";
 import { z } from "zod";
 import { generateEmbedding, queryOpenAI } from "@/Lib/openAi";
+import { analytics } from "@/Lib/analytics";
 
 const questionHandlerApiBody = z.object({
   question: z.string(),
@@ -41,7 +42,17 @@ const QuestionHandler: NextApiHandler = async (req, res) => {
     `${relevantContent.text} \n ---------- \nBased on above text from a companies SEC documents, answer the question: ${question}`
   );
 
-  return res.status(200).json({ answer, section: relevantContent.section });
+  analytics.track("Question Asked (Backend)", {
+    question,
+    answer,
+    ticker,
+  });
+
+  return res.status(200).json({
+    answer,
+    section: relevantContent.section,
+    text: relevantContent.text,
+  });
 };
 
 export default QuestionHandler;
