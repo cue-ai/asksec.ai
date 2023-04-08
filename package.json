@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "generate": "yarn workspace @asksec-ai/shared generate",
-    "postinstall": "yarn generate"
+    "postinstall": "yarn generate && husky install"
   },
   "workspaces": [
     "packages/*"
@@ -23,6 +23,8 @@
     "eslint-plugin-promise": "^6.0.0",
     "eslint-plugin-react": "^7.31.11",
     "eslint-plugin-unused-imports": "^2.0.0",
+    "husky": "^8.0.0",
+    "lint-staged": "^13.2.1",
     "prettier": "^2.8.1",
     "typescript": "5.0.3"
   }
