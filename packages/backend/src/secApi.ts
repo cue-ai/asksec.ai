@@ -33,6 +33,9 @@ export const getEdgarFiling = async (ticker: string): Promise<EdgarFiling> => {
     }
   );
 
+  if (!data.filings || data.filings.length === 0)
+    throw new Error(`No 10k filing found for ${ticker}`);
+
   logger.info(`Got 10k filing`, { ticker, id: data.filings[0].id });
 
   return data.filings[0];
